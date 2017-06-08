@@ -48,21 +48,23 @@ class COSI {
         instance.nad_version = 2;
         try {
             fs.accessSync(instance.nad_etc_dir, fs.F_OK);
-        } catch (nadv1Err) {
-            if (nadv1Err.code === 'ENOENT') {
-                try {
-                    fs.accessSync(path.resolve(path.join(instance.cosi_dir, '..', 'sbin', 'nad')), fs.F_OK);
-                    instance.nad_etc_dir = path.resolve(path.join(instance.cosi_dir, '..', 'etc'));
-                    instance.nad_version = 1;
-                } catch (nadv0Err) {
-                    console.error(chalk.red(`ERROR`), nadv0Err);
-                    process.exit(1);
-                }
-            } else {
+        } catch (nadv2Err) {
+            if (nadv2Err.code !== 'ENOENT') {
+                console.error(chalk.red(`ERROR`), nadv2Err);
+                process.exit(1);
+            }
+
+            // otherwise, check for nad v1
+            try {
+                fs.accessSync(path.resolve(path.join(instance.cosi_dir, '..', 'sbin', 'nad')), fs.F_OK);
+                instance.nad_etc_dir = path.resolve(path.join(instance.cosi_dir, '..', 'etc'));
+                instance.nad_version = 1;
+            } catch (nadv1Err) {
                 console.error(chalk.red(`ERROR`), nadv1Err);
                 process.exit(1);
             }
         }
+
 
         const configFile = path.resolve(path.join(instance.etc_dir, 'cosi.json'));
         let cfg = {};
