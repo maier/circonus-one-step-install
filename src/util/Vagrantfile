@@ -1,17 +1,18 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
-# rubocop:disable Metrics/LineLength
+# xrubocop:disable Metrics/LineLength
+# rubocop:disable Metrics/BlockLength
 
 #
-# dev      - testing bin w/o transpile, https://nodejs.org/download/release/v4.4.4/
-# prod sim - testing build/bin AFTER transpile, https://nodejs.org/download/release/v0.10.42/
+# NOTE: production simulation (sim) held back to node v4.4.5 for omnios
+#       omnibus nad packages use node 6.x
 #
 node_base_url = 'https://nodejs.org/download/release'
-nad_url = 'http://updates.circonus.net/node-agent/packages/nad-omnibus-20160426T191301Z-1.el7.x86_64.rpm'
+nad_url = 'http://updates.circonus.net/node-agent/packages/nad-omnibus-2.0.2-1.el7.x86_64.rpm'
 
 Vagrant.configure(2) do |config|
     config.vm.define 'dev', primary: true, autostart: true do |bx|
-        node_ver = 'v4.4.7'
+        node_ver = 'v6.10.2'
         bx.vm.box = 'maier/centos-7.2.1511-x86_64'
         bx.vm.hostname = 'cosi-cli-dev'
         bx.vm.synced_folder '.', '/vagrant', disabled: true
@@ -29,14 +30,14 @@ Vagrant.configure(2) do |config|
             [[ -x /opt/node/bin/node ]] || {
                 echo "Unpacking $NODE_TGZ"
                 tar -zx -C /opt/node --strip-components=1 -f "/opt/node/${NODE_TGZ}"
-                echo 'export PATH=/opt/node/bin:$PATH' > /etc/profile.d/nodejs.sh
+                echo 'export PATH=$PATH:/opt/node/bin' > /etc/profile.d/nodejs.sh
             }
             date > /home/vagrant/provision_node.timestamp
         SHELL
     end
 
     config.vm.define 'sim', primary: false, autostart: false do |bx|
-        node_ver = 'v0.10.42'
+        node_ver = 'v4.4.5'
         bx.vm.box = 'maier/centos-7.2.1511-x86_64'
         bx.vm.hostname = 'cosi-cli-sim'
         bx.vm.synced_folder '.', '/vagrant', disabled: true
@@ -69,15 +70,9 @@ Vagrant.configure(2) do |config|
         yum -q update -y
         echo "Installing git"
         yum -q install -y git
-        #echo "Installing perl for NAD"
-        #yum -q install -y perl
         [[ -x /opt/circonus/sbin/nad ]] || {
             echo "Installing NAD"
-            rpm -U --nodeps "#{nad_url}"
-        }
-        [[ $(grep -c "127.0.0.1:2609" /etc/sysconfig/nad) -eq 0 ]] && { \
-            echo "NAD_OPTS=\"\${NAD_OPTS} -p 127.0.0.1:2609\"" >> /etc/sysconfig/nad
-            service nad restart
+            rpm -Uvh --nodeps "#{nad_url}"
         }
         date > /home/vagrant/provision_common.timestamp
     SHELL
