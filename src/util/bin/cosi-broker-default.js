@@ -16,14 +16,11 @@ const Broker = require(path.join(cosi.lib_dir, 'broker'));
 
 app.
     version(cosi.app_version).
-    option('-q, --quiet', "no header lines. '|' delimited, parsable output.").
     parse(process.argv);
 
-if (!app.quiet) {
-    console.log(chalk.bold(app.name()), `v${app.version()}`);
-}
+console.log(chalk.bold(app.name()), `v${app.version()}`);
 
-const bh = new Broker(app.quiet);
+const bh = new Broker(false);
 let checkType = 'json';
 
 console.log(cosi.cosi_os_type, cosi.cosi_os_dist, `v${cosi.cosi_os_vers}`, cosi.cosi_os_arch, cosi.agent_mode, 'agent mode.');
@@ -31,24 +28,20 @@ console.log(cosi.cosi_os_type, cosi.cosi_os_dist, `v${cosi.cosi_os_vers}`, cosi.
 console.log(chalk.bold('====='));
 console.log('Determining default broker for check type', checkType);
 
-bh.getDefaultBroker(checkType, (err, broker) => {
-    if (err) {
-        console.dir(err);
-        throw err;
-    }
+bh.getDefaultBroker(checkType).
+    then((broker) => {
+        console.log(chalk.bold('Default broker'), `for check type '${checkType}':`, broker._cid.replace('/broker/', ''), '-', broker._name);
 
-    console.log(chalk.bold('Default broker:'), 'for check type', checkType, broker._cid.replace('/broker/', ''), '-', broker._name);
+        checkType = 'httptrap';
+        console.log(chalk.bold('====='));
+        console.log('Determining default broker for check type', checkType);
 
-    checkType = 'httptrap';
-    console.log(chalk.bold('====='));
-    console.log('Determining default broker for check type', checkType);
-
-    bh.getDefaultBroker(checkType, (err2, broker2) => {
-        if (err2) {
-            console.dir(err2);
-            throw err2;
-        }
-
-        console.log(chalk.bold('Default'), 'broker for', checkType, 'check type:', broker._cid.replace('/broker/', ''), '-', broker2._name);
+        return bh.getDefaultBroker(checkType);
+    }).
+    then((broker) => {
+        console.log(chalk.bold('Default broker'), `for check type '${checkType}':`, broker._cid.replace('/broker/', ''), '-', broker._name);
+    }).
+    catch((err) => {
+        console.log(chalk.red('ERROR:'), 'unable to identify default broker for', checkType, err);
+        process.exit(1);
     });
-});

@@ -19,11 +19,11 @@ const Broker = require(path.join(cosi.lib_dir, 'broker'));
  * generic function to print lines
  * @arg {Boolean} quiet or verbose
  * @arg {String} id broker id
- * @arg {String} name broker name
  * @arg {String} type broker type
+ * @arg {String} name broker name
  * @returns {Undefined} nothing
  */
-function emitLine(quiet, id, name, type) {
+function emitLine(quiet, id, type, name) {
     const lineFormat = '%5s %-10s %-20s';
 
     if (!id) {
@@ -52,22 +52,22 @@ if (!app.quiet) {
 
 const bh = new Broker(app.quiet);
 
-bh.getBrokerList((err, brokers) => {
-    if (err) {
+bh.getBrokerList().
+    then((brokers) => {
+        emitLine(app.quiet);
+
+        for (const broker of brokers) {
+            if (broker._name !== 'composite') {
+                emitLine(
+                    app.quiet,
+                    broker._cid.replace('/broker/', ''),
+                    broker._type,
+                    broker._name
+                );
+            }
+        }
+    }).
+    catch((err) => {
         console.log(chalk.red('ERROR'), 'fetching broker list', err);
         process.exit(1);
-    }
-
-    emitLine(app.quiet);
-
-    for (const broker of brokers) {
-        if (broker._name !== 'composite') {
-            emitLine(
-                app.quiet,
-                broker._cid.replace('/broker/', ''),
-                broker._type,
-                broker._name
-            );
-        }
-    }
-});
+    });
