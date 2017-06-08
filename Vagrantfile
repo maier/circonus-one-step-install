@@ -1,5 +1,6 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
+# rubocop:disable Style/NumericLiterals
 
 Vagrant.configure(2) do |config|
     config.vm.define 'centos', primary: true do |centos|
@@ -39,5 +40,4 @@ Vagrant.configure(2) do |config|
         # ansible.verbose = 'vvvv'
         ansible.playbook = 'provision/cosi-site.yml'
     end
-
 end
